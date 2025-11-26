@@ -282,7 +282,39 @@ app.post("/register", async (req, res) => {
 // POST /login
 // =========================
 app.post("/login", async (req, res) => {
-  // Implement logic here based on the TODO 2.
+    try {
+        const { email, password } = req.body || {};
+
+        // 1) Validate
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required" });
+        }
+
+        // 2) Find user
+        const user = users.find((u) => u.email === email);
+        if (!user) {
+            return res.status(400).json({ error: "User not found" });
+        }
+
+        // 3) Check password
+        const match = await bcrypt.compare(password, user.passwordHash);
+        if (!match) {
+            return res.status(400).json({ error: "Wrong password" });
+        }
+
+        // 4) Create token
+        const token = jwt.sign(
+            { email },
+            JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        // 5) Success
+        return res.json({ token });
+    } catch (err) {
+        console.error("Login error:", err);
+        return res.status(500).json({ error: "Server error during login" });
+    }
 });
 
 // =========================
